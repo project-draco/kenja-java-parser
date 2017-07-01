@@ -72,6 +72,12 @@ public class ASTMethod implements Treeable {
     isConstructor = node.isConstructor();
     setBody(node);
     setParameters(node.parameters());
+    setDependencies(node);
+  }
+
+  private void setDependencies(MethodDeclaration node) {
+    MethodInvocationVisitor visitor = new MethodInvocationVisitor();
+    node.getBody().accept(visitor);
   }
 
   /**

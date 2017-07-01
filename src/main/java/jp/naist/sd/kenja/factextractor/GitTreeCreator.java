@@ -1,15 +1,13 @@
 package jp.naist.sd.kenja.factextractor;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.IOException;
+import java.io.*;
+import java.util.Map;
 
 import jp.naist.sd.kenja.factextractor.ast.ASTCompilation;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -29,6 +27,11 @@ public class GitTreeCreator {
   private void parseSourcecode(char[] src) {
     ASTParser parser = ASTParser.newParser(AST.JLS4);
 
+    parser.setUnitName("C.java");
+    parser.setResolveBindings(true);
+    parser.setBindingsRecovery(true);
+    String[] sources = { "/" };
+    parser.setEnvironment(null, sources, new String[] { "UTF-8"}, true);
     parser.setSource(src);
 
     NullProgressMonitor nullMonitor = new NullProgressMonitor();
@@ -37,17 +40,17 @@ public class GitTreeCreator {
     compilation = new ASTCompilation(unit, root);
   }
 
-  private void parseSourcecodeAndWriteSyntaxTree(char[] src, String outputPath) {
+  private void parseSourcecodeAndWriteSyntaxTree(char[] src, String outputPath, boolean dependencies) {
     File outputFile = new File(outputPath);
-    parseSourcecodeAndWriteSyntaxTree(src, outputFile);
+    parseSourcecodeAndWriteSyntaxTree(src, outputFile, dependencies);
   }
 
-  private void parseSourcecodeAndWriteSyntaxTree(char[] src, File outputFile) {
+  private void parseSourcecodeAndWriteSyntaxTree(char[] src, File outputFile, boolean dependencies) {
     parseSourcecode(src);
-    writeASTAsFileTree(outputFile);
+    writeASTAsFileTree(outputFile, dependencies);
   }
 
-  private void parseBlobs(String repositoryPath, String syntaxTreeDirPath) {
+  private void parseBlobs(String repositoryPath, String syntaxTreeDirPath, boolean dependencies) {
     File repoDir = new File(repositoryPath);
     try {
       Repository repo = new FileRepository(repoDir);
@@ -62,7 +65,7 @@ public class GitTreeCreator {
 
         char[] src = IOUtils.toCharArray(loader.openStream());
         File outputFile = new File(syntaxTreeDirPath, line);
-        parseSourcecodeAndWriteSyntaxTree(src, outputFile);
+        parseSourcecodeAndWriteSyntaxTree(src, outputFile, dependencies);
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -70,16 +73,16 @@ public class GitTreeCreator {
 
   }
 
-  public void writeASTAsFileTree(File outputFile) {
+  public void writeASTAsFileTree(File outputFile, boolean dependencies) {
     try {
-      TreeWriter writer = new TextFormatTreeWriter(outputFile);
+      TreeWriter writer = new TextFormatTreeWriter(outputFile, dependencies);
       writer.writeTree(compilation.getTree());
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     if (args.length > 2) {
       System.out.println("Usage(1): path_of_output_file");
       System.out.println("Usage(2); path_of_git_repository path_of_syntax_trees_dir");
@@ -88,15 +91,14 @@ public class GitTreeCreator {
 
     GitTreeCreator creator = new GitTreeCreator();
 
-    if (args.length == 1) {
-      try {
-        char[] src = IOUtils.toCharArray(System.in);
-        creator.parseSourcecodeAndWriteSyntaxTree(src, args[0]);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    if (args[0].equals("--dependencies")) {
+      char[] src = IOUtils.toCharArray(System.in);
+      creator.parseSourcecodeAndWriteSyntaxTree(src, args[1], true);
+    } else if (args.length == 1) {
+      char[] src = IOUtils.toCharArray(System.in);
+      creator.parseSourcecodeAndWriteSyntaxTree(src, args[0], false);
     } else {
-      creator.parseBlobs(args[0], args[1]);
+      creator.parseBlobs(args[0], args[1], false);
     }
   }
 }

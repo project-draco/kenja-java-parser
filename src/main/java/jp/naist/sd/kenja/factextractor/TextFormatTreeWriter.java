@@ -23,8 +23,10 @@ public class TextFormatTreeWriter implements TreeWriter {
 
   private static final String START_TREE = "[TS] ";
   private static final String END_TREE = "[TE] ";
+  private boolean dependencies;
 
-  public TextFormatTreeWriter(File outputFile) throws IOException {
+  public TextFormatTreeWriter(File outputFile, boolean dependencies) throws IOException {
+    this.dependencies = dependencies;
     this.outputFile = outputFile.getAbsoluteFile();
     if (!this.outputFile.getParentFile().exists()) {
       Files.createParentDirs(this.outputFile);

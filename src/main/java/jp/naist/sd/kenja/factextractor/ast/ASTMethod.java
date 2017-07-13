@@ -1,13 +1,17 @@
 package jp.naist.sd.kenja.factextractor.ast;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
+
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import jp.naist.sd.kenja.factextractor.Blob;
 import jp.naist.sd.kenja.factextractor.Tree;
 import jp.naist.sd.kenja.factextractor.Treeable;
-
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 /**
  * A class which represents Method of Java for Historage.
@@ -74,13 +78,29 @@ public class ASTMethod implements Treeable {
     setParameters(node.parameters());
     setDependencies(node);
   }
-
+  
   private void setDependencies(MethodDeclaration node) {
-    MethodInvocationVisitor visitor = new MethodInvocationVisitor();
-    node.getBody().accept(visitor);
+	writeCallingMethod(node);
+	
+   	MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
+  	node.getBody().accept(invocationVisitor);
   }
 
-  /**
+  private void writeCallingMethod(MethodDeclaration node) {
+    File f = new File("dependencies.txt");
+	FileWriter fw = null;
+	BufferedWriter bw = null;
+	try {
+		fw = f.exists() ? new FileWriter(f, true) : new FileWriter(f, true);
+		bw = new BufferedWriter(fw);
+		bw.write("CALLING METHOD: " + node.resolveBinding().getDeclaringClass().getQualifiedName() + "." + node.getName() + "\n");
+		bw.close();
+	} catch (IOException e) {
+		e.printStackTrace();
+	}
+  }
+
+/**
    * Return root tree name.
    * 
    * @param node

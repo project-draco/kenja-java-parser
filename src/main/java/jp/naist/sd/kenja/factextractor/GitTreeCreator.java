@@ -24,13 +24,13 @@ public class GitTreeCreator {
   public GitTreeCreator() {
   }
 
-  private void parseSourcecode(char[] src) {
+  private void parseSourcecode(char[] src, String sourcesDir) {
     ASTParser parser = ASTParser.newParser(AST.JLS4);
 
-    parser.setUnitName("C.java");
+    parser.setUnitName("U.java");
     parser.setResolveBindings(true);
     parser.setBindingsRecovery(true);
-    String[] sources = { "/" };
+    String[] sources = { sourcesDir };
     parser.setEnvironment(null, sources, new String[] { "UTF-8"}, true);
     parser.setSource(src);
 
@@ -40,17 +40,17 @@ public class GitTreeCreator {
     compilation = new ASTCompilation(unit, root);
   }
 
-  private void parseSourcecodeAndWriteSyntaxTree(char[] src, String outputPath, boolean dependencies) {
+  private void parseSourcecodeAndWriteSyntaxTree(char[] src, String outputPath, String sourcesDir, boolean dependencies) {
     File outputFile = new File(outputPath);
-    parseSourcecodeAndWriteSyntaxTree(src, outputFile, dependencies);
+    parseSourcecodeAndWriteSyntaxTree(src, outputFile, sourcesDir, dependencies);
   }
 
-  private void parseSourcecodeAndWriteSyntaxTree(char[] src, File outputFile, boolean dependencies) {
-    parseSourcecode(src);
+  private void parseSourcecodeAndWriteSyntaxTree(char[] src, File outputFile, String sourcesDir, boolean dependencies) {
+    parseSourcecode(src, sourcesDir);
     writeASTAsFileTree(outputFile, dependencies);
   }
 
-  private void parseBlobs(String repositoryPath, String syntaxTreeDirPath, boolean dependencies) {
+  private void parseBlobs(String repositoryPath, String syntaxTreeDirPath, String sourceDir, boolean dependencies) {
     File repoDir = new File(repositoryPath);
     try {
       Repository repo = new FileRepository(repoDir);
@@ -65,7 +65,7 @@ public class GitTreeCreator {
 
         char[] src = IOUtils.toCharArray(loader.openStream());
         File outputFile = new File(syntaxTreeDirPath, line);
-        parseSourcecodeAndWriteSyntaxTree(src, outputFile, dependencies);
+        parseSourcecodeAndWriteSyntaxTree(src, outputFile, sourceDir, dependencies);
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -83,7 +83,7 @@ public class GitTreeCreator {
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length > 2) {
+    if (args.length > 3) {
       System.out.println("Usage(1): path_of_output_file");
       System.out.println("Usage(2); path_of_git_repository path_of_syntax_trees_dir");
       return;
@@ -93,12 +93,12 @@ public class GitTreeCreator {
 
     if (args[0].equals("--dependencies")) {
       char[] src = IOUtils.toCharArray(System.in);
-      creator.parseSourcecodeAndWriteSyntaxTree(src, args[1], true);
+      creator.parseSourcecodeAndWriteSyntaxTree(src, args[1], args[2], true);
     } else if (args.length == 1) {
       char[] src = IOUtils.toCharArray(System.in);
-      creator.parseSourcecodeAndWriteSyntaxTree(src, args[0], false);
+      creator.parseSourcecodeAndWriteSyntaxTree(src, args[0], "", false);
     } else {
-      creator.parseBlobs(args[0], args[1], false);
+      creator.parseBlobs(args[0], args[1], "", false);
     }
   }
 }

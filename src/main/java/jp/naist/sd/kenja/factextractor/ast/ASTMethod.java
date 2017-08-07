@@ -4,6 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -80,24 +83,13 @@ public class ASTMethod implements Treeable {
   }
   
   private void setDependencies(MethodDeclaration node) {
-	writeCallingMethod(node);
-	
-   	MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor();
+    Collection<String> called = new HashSet<String>();
+   	MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor(called);
   	node.getBody().accept(invocationVisitor);
-  }
-
-  private void writeCallingMethod(MethodDeclaration node) {
-    File f = new File("dependencies.txt");
-	FileWriter fw = null;
-	BufferedWriter bw = null;
-	try {
-		fw = f.exists() ? new FileWriter(f, true) : new FileWriter(f, true);
-		bw = new BufferedWriter(fw);
-		bw.write("CALLING METHOD: " + node.resolveBinding().getDeclaringClass().getQualifiedName() + "." + node.getName() + "\n");
-		bw.close();
-	} catch (IOException e) {
-		e.printStackTrace();
-	}
+    String caller =  node.resolveBinding().getDeclaringClass().getQualifiedName() + "." + node.getName();
+    for (String m : called) {
+      System.out.println(caller + "\t" + m + "\n");
+    }
   }
 
 /**

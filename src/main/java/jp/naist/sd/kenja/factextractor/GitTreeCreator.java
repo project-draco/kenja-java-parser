@@ -1,6 +1,7 @@
 package jp.naist.sd.kenja.factextractor;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Map;
 
 import jp.naist.sd.kenja.factextractor.ast.ASTCompilation;
@@ -30,14 +31,21 @@ public class GitTreeCreator {
     parser.setUnitName("U.java");
     parser.setResolveBindings(true);
     parser.setBindingsRecovery(true);
-    String[] sources = { sourcesDir };
-    parser.setEnvironment(null, sources, new String[] { "UTF-8"}, true);
+    String[] sources = sourcesDir.split(",");
+    String[] encodings = new String[sources.length];
+    for (int i = 0; i < encodings.length; i++) {
+      encodings[i] = "UTF-8";
+    }
+    parser.setEnvironment(null, sources, encodings, true);
     parser.setSource(src);
+
+    SourceFinder.initialize(sources);
 
     NullProgressMonitor nullMonitor = new NullProgressMonitor();
     CompilationUnit unit = (CompilationUnit) parser.createAST(nullMonitor);
 
     compilation = new ASTCompilation(unit, root);
+
   }
 
   private void parseSourcecodeAndWriteSyntaxTree(char[] src, String outputPath, String sourcesDir, boolean dependencies) {

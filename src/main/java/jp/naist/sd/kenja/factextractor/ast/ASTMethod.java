@@ -1,14 +1,10 @@
 package jp.naist.sd.kenja.factextractor.ast;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+import jp.naist.sd.kenja.factextractor.SourceFinder;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
@@ -84,11 +80,13 @@ public class ASTMethod implements Treeable {
   
   private void setDependencies(MethodDeclaration node) {
     Collection<String> called = new HashSet<String>();
-   	MethodInvocationVisitor invocationVisitor = new MethodInvocationVisitor(called);
-  	node.getBody().accept(invocationVisitor);
-    String caller =  node.resolveBinding().getDeclaringClass().getQualifiedName() + "." + node.getName();
+   	UsageVisitor visitor = new UsageVisitor(called);
+  	node.getBody().accept(visitor);
+    String qualifiedName = node.resolveBinding().getDeclaringClass().getQualifiedName();
+    String fileName = SourceFinder.getInstance().findSource(qualifiedName);
+    String caller = fileName + "/[MT]/" + getTreeName(node) + "/body";
     for (String m : called) {
-      System.out.println(caller + "\t" + m + "\n");
+      System.out.println(caller + "\t" + m);
     }
   }
 
